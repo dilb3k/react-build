@@ -5,7 +5,7 @@ import ComponentPaletteAndRenderer from "./ComponentPaletteAndRenderer"
 import LayoutEditor from "./LayoutEditor"
 import PropertiesAndCodePanel from "./PropertiesAndCodePanel"
 import TemplatesManager from "./TemplatesManager"
-import { generateReactCode } from "../utils/codeGenerator"
+import { generateReactCode } from "../utils/CodeGenerator"
 
 const STORAGE_KEY = "react-ui-builder-state"
 
