@@ -5,7 +5,10 @@ import ComponentPaletteAndRenderer from "./ComponentPaletteAndRenderer"
 import LayoutEditor from "./LayoutEditor"
 import PropertiesAndCodePanel from "./PropertiesAndCodePanel"
 import TemplatesManager from "./TemplatesManager"
+import generateVueCode from "../utils/VueCodeGenerator";
+
 import { generateReactCode } from "../utils/CodeGenerator"
+import CodePanel from "./CodePanel"
 
 const STORAGE_KEY = "react-ui-builder-state"
 
@@ -26,6 +29,7 @@ function UIBuilder() {
     const [layout, setLayout] = useState(DEFAULT_LAYOUT)
     const [selectedComponentId, setSelectedComponentId] = useState(null)
     const [selectedColumnId, setSelectedColumnId] = useState(null)
+    const [codeFormat, setCodeFormat] = useState("react")
     const [showPropertiesPanel, setShowPropertiesPanel] = useState(true)
     const [showPreview, setShowPreview] = useState(false)
     const [showTemplates, setShowTemplates] = useState(false)
@@ -659,8 +663,12 @@ function UIBuilder() {
 
     const { component, columnId } = getSelectedComponent()
     const selectedColumn = getSelectedColumn()
-    const generatedCode = generateReactCode(layout)
-
+    const generatedReactCode = generateReactCode(layout)
+    const generatedVueCode = generateVueCode(layout)
+    if (layout && Array.isArray(layout.rows)) {
+        const generatedVueCode = generateVueCode(layout);
+    }
+    const generatedCode = codeFormat === "react" ? generatedReactCode : generatedVueCode
     if (showTemplates) {
         return (
             <TemplatesManager
@@ -673,9 +681,21 @@ function UIBuilder() {
             />
         )
     }
+    const handleCodeChange = (newCode) => {
+        // Here you could implement a parser to update the layout from code changes
+        // For now, we'll just update the code without modifying the layout
+        console.log("Code updated in editor");
 
+        // If you want to implement code -> layout parsing in the future,
+        // this is where you would do it
+    }
+
+    // Toggle code panel visibility
+    const toggleCodePanel = () => {
+        setShowCodePanel(!showCodePanel);
+    }
     return (
-        <div className="flex flex-col h-screen">
+        <div className="flex flex-col">
             <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-800">React UI Builder</h1>
                 <div className="flex space-x-2">
@@ -817,6 +837,25 @@ function UIBuilder() {
                                     </svg>
                                     Back to Editor
                                 </button>
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-sm font-medium">Code Format:</span>
+                                    <div className="flex border rounded-md overflow-hidden">
+                                        <button
+                                            className={`px-3 py-1 text-sm ${codeFormat === "react" ? "bg-blue-500 text-white" : "bg-white text-gray-700"
+                                                }`}
+                                            onClick={() => setCodeFormat("react")}
+                                        >
+                                            React
+                                        </button>
+                                        <button
+                                            className={`px-3 py-1 text-sm ${codeFormat === "vue" ? "bg-blue-500 text-white" : "bg-white text-gray-700"
+                                                }`}
+                                            onClick={() => setCodeFormat("vue")}
+                                        >
+                                            Vue
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <div className="flex-1 border border-gray-300 rounded-md overflow-hidden">
                                 <pre className="bg-gray-50 p-4 rounded-md overflow-auto h-full text-sm">
@@ -852,6 +891,8 @@ function UIBuilder() {
                         onUpdateComponent={handleUpdateComponent}
                         onUpdateColumn={handleUpdateColumn}
                         code={generatedCode}
+                        codeFormat={codeFormat}
+                        onChangeCodeFormat={setCodeFormat}
                     />
                 )}
             </div>
@@ -905,6 +946,27 @@ function UIBuilder() {
                     </div>
                 </div>
             )}
+            <div className="w-full">
+                <div className="flex items-center space-x-2">
+                    <span className="text-2xl font-medium">Format:</span>
+                    <select
+                        value={codeFormat}
+                        onChange={(e) => setCodeFormat(e.target.value)}
+                        className="border rounded px-2 py-1 text-sm"
+                    >
+                        <option value="react">React</option>
+                        <option value="vue">Vue</option>
+                    </select>
+                </div>
+                <CodePanel
+                    code={generatedCode}
+                    language="jsx" // or "javascript", "html", "css", etc.
+                    onChange={handleCodeChange}
+                    showPreview={true}
+                    codeFormat="react" // or "vue", "html"
+                    theme="dark" // or "light"
+                />
+            </div>
         </div>
     )
 }
