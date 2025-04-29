@@ -1,7 +1,7 @@
 "use client"
 
-import { useRef } from "react"
-import { useDrag, useDrop } from "react-dnd"
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useDrag, useDrop } from "react-dnd";
 
 function LayoutEditor({
     layout,
@@ -19,19 +19,53 @@ function LayoutEditor({
     onMoveColumn,
     onUpdateColumn,
 }) {
-    const handleDragOver = (e) => {
-        e.preventDefault()
-    }
+    const [history, setHistory] = useState([layout]);
+    const [historyIndex, setHistoryIndex] = useState(0);
+    const [error, setError] = useState(null);
 
-    const handleDrop = (e, columnId) => {
-        e.preventDefault()
-        const componentType = e.dataTransfer.getData("componentType")
-        if (componentType) {
-            onAddComponent(componentType, columnId)
+    useEffect(() => {
+        // Persist layout to local storage
+        localStorage.setItem("layout", JSON.stringify(layout));
+    }, [layout]);
+
+    const pushToHistory = useCallback((newLayout) => {
+        setHistory((prev) => {
+            const newHistory = prev.slice(0, historyIndex + 1).concat([newLayout]);
+            setHistoryIndex(newHistory.length - 1);
+            return newHistory;
+        });
+    }, [historyIndex]);
+
+    const handleUndo = useCallback(() => {
+        if (historyIndex > 0) {
+            setHistoryIndex((prev) => prev - 1);
+            // Update layout to previous state
+            // This assumes a parent component manages the layout state
+            // You may need to call a callback to update the parent state
         }
-    }
+    }, [historyIndex]);
 
-    const getColumnWidthClass = (width) => {
+    const handleRedo = useCallback(() => {
+        if (historyIndex < history.length - 1) {
+            setHistoryIndex((prev) => prev + 1);
+            // Update layout to next state
+        }
+    }, [historyIndex, history]);
+
+    const handleDragOver = useCallback((e) => {
+        e.preventDefault();
+    }, []);
+
+    const handleDrop = useCallback((e, columnId) => {
+        e.preventDefault();
+        const componentType = e.dataTransfer.getData("componentType");
+        if (componentType) {
+            onAddComponent(componentType, columnId);
+            pushToHistory({ ...layout }); // Save state after adding component
+        }
+    }, [onAddComponent, layout, pushToHistory]);
+
+    const getColumnWidthClass = useCallback((width) => {
         const widthMap = {
             1: "w-1/12",
             2: "w-2/12",
@@ -45,23 +79,23 @@ function LayoutEditor({
             10: "w-10/12",
             11: "w-11/12",
             12: "w-full",
+        };
+        if (!widthMap[width]) {
+            setError("Invalid column width");
+            return "w-full";
         }
-        return widthMap[width] || "w-full"
-    }
+        return widthMap[width];
+    }, []);
 
-    // Define renderColumns function at the component level so it can be passed to child components
-    const renderColumns = (columns = [], parentId = null) => {
-        // Add a null check for columns
+    const renderColumns = useCallback((columns = [], parentId = null) => {
         if (!columns || columns.length === 0) {
-            return <div className="flex flex-wrap"></div>
+            return <div className="flex flex-wrap"></div>;
         }
 
         return (
             <div className="flex flex-wrap">
                 {columns.map((column, index) => {
-                    // Skip rendering if column is undefined
-                    if (!column) return null
-
+                    if (!column) return null;
                     return (
                         <ColumnItem
                             key={column.id}
@@ -82,30 +116,59 @@ function LayoutEditor({
                             getColumnWidthClass={getColumnWidthClass}
                             handleDragOver={handleDragOver}
                             handleDrop={handleDrop}
-                            renderColumns={renderColumns} // Pass the renderColumns function as a prop
+                            renderColumns={renderColumns}
                             onUpdateColumn={onUpdateColumn}
                         />
-                    )
+                    );
                 })}
             </div>
-        )
-    }
+        );
+    }, [
+        selectedComponentId,
+        selectedColumnId,
+        onSelectComponent,
+        onSelectColumn,
+        onAddComponent,
+        onDeleteComponent,
+        onAddColumn,
+        onDeleteColumn,
+        onUpdateColumnWidth,
+        onMoveComponent,
+        onMoveColumn,
+        getColumnWidthClass,
+        handleDragOver,
+        handleDrop,
+        onUpdateColumn,
+    ]);
 
     return (
         <div className="flex-1 p-4 overflow-auto">
+            {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
             <div className="mb-4 flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                     <span className="text-sm font-medium">Container Width:</span>
                     <input
                         type="text"
                         value={layout.containerWidth}
-                        onChange={(e) => onUpdateContainerWidth(e.target.value)}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            if (!value.match(/^\d+(px|%|rem|em|vw)?$/)) {
+                                setError("Invalid container width");
+                                return;
+                            }
+                            setError(null);
+                            onUpdateContainerWidth(value);
+                            pushToHistory({ ...layout, containerWidth: value });
+                        }}
                         className="w-32 px-2 py-1 border border-gray-300 rounded-md"
                     />
                 </div>
                 <button
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
-                    onClick={() => onAddColumn("horizontal")}
+                    onClick={() => {
+                        onAddColumn("horizontal");
+                        pushToHistory({ ...layout });
+                    }}
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -125,7 +188,10 @@ function LayoutEditor({
                 </button>
                 <button
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
-                    onClick={() => onAddColumn("vertical")}
+                    onClick={() => {
+                        onAddColumn("vertical");
+                        pushToHistory({ ...layout });
+                    }}
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -138,13 +204,32 @@ function LayoutEditor({
                     </svg>
                     Add Vertical Column
                 </button>
+                <div className="flex items-center space-x-2">
+                    <button
+                        className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50"
+                        onClick={handleUndo}
+                        disabled={historyIndex === 0}
+                    >
+                        Undo
+                    </button>
+                    <button
+                        className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50"
+                        onClick={handleRedo}
+                        disabled={historyIndex === history.length - 1}
+                    >
+                        Redo
+                    </button>
+                </div>
             </div>
 
-            <div className="border border-gray-300 rounded-md p-4 min-h-[500px]" style={{ width: layout.containerWidth }}>
+            <div
+                className="border border-gray-300 rounded-md p-4 min-h-[500px]"
+                style={{ width: layout.containerWidth }}
+            >
                 {renderColumns(layout.columns)}
             </div>
         </div>
-    )
+    );
 }
 
 function ColumnItem({
@@ -168,80 +253,53 @@ function ColumnItem({
     renderColumns,
     onUpdateColumn,
 }) {
-    const ref = useRef(null)
+    const ref = useRef(null);
+    const orientation = column?.orientation || "horizontal";
 
-    // Ensure column has orientation property with a default value
-    const orientation = column?.orientation || "horizontal"
-
-    // Set up drag for column
     const [{ isDragging }, drag] = useDrag({
         type: "COLUMN",
         item: { type: "COLUMN", id: column.id, index },
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
         }),
-    })
+    });
 
-    // Set up drop for column
     const [{ isOver }, drop] = useDrop({
-        accept: "COLUMN",
+        accept: ["COLUMN", "COMPONENT"],
         hover(item, monitor) {
-            if (!ref.current) {
-                return
+            if (!ref.current) return;
+            if (item.type === "COLUMN") {
+                const dragIndex = item.index;
+                const hoverIndex = index;
+                if (dragIndex === hoverIndex) return;
+                onMoveColumn(dragIndex, hoverIndex, parentId);
+                item.index = hoverIndex;
             }
-
-            // Only handle items of type COLUMN
-            if (item.type !== "COLUMN") {
-                return
-            }
-
-            const dragIndex = item.index
-            const hoverIndex = index
-
-            // Don't replace items with themselves
-            if (dragIndex === hoverIndex) {
-                return
-            }
-
-            // Time to actually perform the action
-            onMoveColumn(dragIndex, hoverIndex, parentId)
-
-            // Note: we're mutating the monitor item here!
-            // Generally it's better to avoid mutations,
-            // but it's good here for the sake of performance
-            // to avoid expensive index searches.
-            item.index = hoverIndex
         },
         collect: (monitor) => ({
             isOver: monitor.isOver(),
         }),
-    })
+    });
 
-    // Initialize drag and drop refs
-    drag(drop(ref))
+    drag(drop(ref));
 
-    const isSelected = selectedColumnId === column.id
-
-    // Ensure column has components array
-    const components = column?.components || []
-
-    // Ensure column has childColumns array
-    const childColumns = column?.childColumns || []
+    const isSelected = selectedColumnId === column.id;
+    const components = column?.components || [];
+    const childColumns = column?.childColumns || [];
 
     return (
         <div
             ref={ref}
             className={`${orientation === "horizontal" ? getColumnWidthClass(column.width) : "w-full"} p-2`}
-            style={{ opacity: isDragging ? 0.5 : 1 }}
+            style={{ opacity: isDragging ? 0.5 : 1, backgroundColor: isOver ? "#f0f0f0" : "transparent" }}
         >
             <div
-                className={`border border-dashed ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-300"
-                    } rounded-md p-4 min-h-[100px] relative`}
+                className={`border border-dashed ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-300"} rounded-md p-4 min-h-[100px] relative`}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, column.id)}
                 onClick={(e) => {
-                    e.stopPropagation()
-                    onSelectColumn(column.id)
+                    e.stopPropagation();
+                    onSelectColumn(column.id);
                 }}
             >
                 <div className="absolute top-2 right-2 flex space-x-1">
@@ -252,7 +310,11 @@ function ColumnItem({
                                 min="1"
                                 max="12"
                                 value={column.width}
-                                onChange={(e) => onUpdateColumnWidth(column.id, Number.parseInt(e.target.value))}
+                                onChange={(e) => {
+                                    const value = Number.parseInt(e.target.value);
+                                    if (value < 1 || value > 12) return;
+                                    onUpdateColumnWidth(column.id, value);
+                                }}
                                 className="w-16 h-6 text-xs px-1 border border-gray-300 rounded"
                                 onClick={(e) => e.stopPropagation()}
                             />
@@ -262,8 +324,8 @@ function ColumnItem({
                     <button
                         className="h-6 w-6 flex items-center justify-center text-gray-500 hover:text-gray-700"
                         onClick={(e) => {
-                            e.stopPropagation()
-                            onAddColumn("horizontal", column.id)
+                            e.stopPropagation();
+                            onAddColumn("horizontal", column.id);
                         }}
                         title="Add Nested Horizontal Column"
                     >
@@ -280,8 +342,8 @@ function ColumnItem({
                     <button
                         className="h-6 w-6 flex items-center justify-center text-gray-500 hover:text-gray-700"
                         onClick={(e) => {
-                            e.stopPropagation()
-                            onDeleteColumn(column.id)
+                            e.stopPropagation();
+                            onDeleteColumn(column.id);
                         }}
                     >
                         <svg
@@ -330,92 +392,68 @@ function ColumnItem({
 
                 {childColumns.length > 0 && (
                     <div className="mt-4 border-t border-gray-200 pt-4">
-                        {/* Use the renderColumns prop here */}
                         {renderColumns(childColumns, column.id)}
                     </div>
                 )}
             </div>
         </div>
-    )
+    );
 }
 
 function ComponentItem({ component, index, columnId, isSelected, onSelect, onDelete, onMoveComponent }) {
-    const ref = useRef(null)
+    const ref = useRef(null);
 
-    // Set up drag for component
     const [{ isDragging }, drag] = useDrag({
         type: "COMPONENT",
         item: { type: "COMPONENT", id: component.id, index, columnId },
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
         }),
-    })
+    });
 
-    // Set up drop for component
     const [{ isOver }, drop] = useDrop({
         accept: "COMPONENT",
         hover(item, monitor) {
-            if (!ref.current) {
-                return
-            }
-
-            // Only handle items of type COMPONENT
-            if (item.type !== "COMPONENT") {
-                return
-            }
-
-            const dragIndex = item.index
-            const hoverIndex = index
-            const sourceColumnId = item.columnId
-            const targetColumnId = columnId
-
-            // Don't replace items with themselves
-            if (dragIndex === hoverIndex && sourceColumnId === targetColumnId) {
-                return
-            }
-
-            // Time to actually perform the action
-            onMoveComponent(dragIndex, hoverIndex, sourceColumnId, targetColumnId)
-
-            // Note: we're mutating the monitor item here!
-            // Generally it's better to avoid mutations,
-            // but it's good here for the sake of performance
-            // to avoid expensive index searches.
-            item.index = hoverIndex
-            item.columnId = targetColumnId
+            if (!ref.current) return;
+            if (item.type !== "COMPONENT") return;
+            const dragIndex = item.index;
+            const hoverIndex = index;
+            const sourceColumnId = item.columnId;
+            const targetColumnId = columnId;
+            if (dragIndex === hoverIndex && sourceColumnId === targetColumnId) return;
+            onMoveComponent(dragIndex, hoverIndex, sourceColumnId, targetColumnId);
+            item.index = hoverIndex;
+            item.columnId = targetColumnId;
         },
         collect: (monitor) => ({
             isOver: monitor.isOver(),
         }),
-    })
+    });
 
-    // Initialize drag and drop refs
-    drag(drop(ref))
+    drag(drop(ref));
 
-    // Render a placeholder for the component
-    const renderComponentPlaceholder = () => {
-        const { type, props = {} } = component
-
+    const renderComponentPlaceholder = useCallback(() => {
+        const { type, props = {} } = component;
         switch (type) {
             case "button":
                 return (
                     <div className="px-4 py-2 bg-blue-100 border border-blue-300 rounded-md text-center">
                         Button: {props.text || "Button"}
                     </div>
-                )
+                );
             case "input":
                 return (
                     <div className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-md">
                         Input: {props.placeholder || "Enter text..."}
                     </div>
-                )
+                );
             case "text":
-                const Element = props.element || "p"
+                const Element = props.element || "p";
                 return (
                     <div className="px-4 py-2 bg-yellow-100 border border-yellow-300 rounded-md">
                         {Element.toUpperCase()}: {props.text || "Text content"}
                     </div>
-                )
+                );
             case "image":
                 return (
                     <div className="px-4 py-2 bg-green-100 border border-green-300 rounded-md flex items-center">
@@ -435,26 +473,25 @@ function ComponentItem({ component, index, columnId, isSelected, onSelect, onDel
                         </svg>
                         Image: {props.alt || "Image"}
                     </div>
-                )
+                );
             case "div":
                 return (
                     <div className="px-4 py-2 bg-purple-100 border border-purple-300 rounded-md">
                         Div: {props.text || "Div Container"}
                     </div>
-                )
+                );
             default:
-                return <div>Unknown component type: {type}</div>
+                return <div>Unknown component type: {type}</div>;
         }
-    }
+    }, [component]);
 
     return (
         <div
             ref={ref}
-            className={`p-2 rounded-md ${isSelected ? "ring-2 ring-blue-500" : "hover:bg-gray-50"} ${isDragging ? "opacity-50" : "opacity-100"
-                } ${isOver ? "bg-gray-100" : ""}`}
+            className={`p-2 rounded-md ${isSelected ? "ring-2 ring-blue-500" : "hover:bg-gray-50"} ${isDragging ? "opacity-50" : "opacity-100"} ${isOver ? "bg-gray-100" : ""}`}
             onClick={(e) => {
-                e.stopPropagation()
-                onSelect()
+                e.stopPropagation();
+                onSelect();
             }}
             style={{ cursor: "move" }}
         >
@@ -464,8 +501,8 @@ function ComponentItem({ component, index, columnId, isSelected, onSelect, onDel
                         <button
                             className="h-6 w-6 flex items-center justify-center text-red-500 hover:text-red-700 bg-white rounded-full shadow"
                             onClick={(e) => {
-                                e.stopPropagation()
-                                onDelete()
+                                e.stopPropagation();
+                                onDelete();
                             }}
                         >
                             <svg
@@ -488,7 +525,7 @@ function ComponentItem({ component, index, columnId, isSelected, onSelect, onDel
                 <div className={isSelected ? "opacity-80" : ""}>{renderComponentPlaceholder()}</div>
             </div>
         </div>
-    )
+    );
 }
 
-export default LayoutEditor
+export default LayoutEditor;
