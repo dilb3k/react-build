@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { RotateCcw, FileCode, Layout, Code, Settings } from "lucide-react";
 import BackendCodeGenerator from "./BackendCodeGenerator";
@@ -40,6 +40,23 @@ function BackendUIBuilder() {
     const [backendState, setBackendState] = useState(null);
     const [activeTab, setActiveTab] = useState("generator");
 
+    // Validate columns recursively
+    const validateColumns = useCallback((columns) => {
+        return columns.map((column) => ({
+            id: column.id || `column-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            width: typeof column.width === "number" ? column.width : 12,
+            components: Array.isArray(column.components) ? column.components : [],
+            orientation: column.orientation === "vertical" ? "vertical" : "horizontal",
+            parentId: column.parentId || null,
+            childColumns: Array.isArray(column.childColumns) ? validateColumns(column.childColumns) : [],
+            flexLayout: column.flexLayout || "items-start justify-start",
+            gap: column.gap || "0",
+            backgroundColor: column.backgroundColor || "transparent",
+            borderRadius: column.borderRadius || "0",
+            border: column.border || "none",
+        }));
+    }, []);
+
     // Load saved state on initial render
     useEffect(() => {
         try {
@@ -53,7 +70,7 @@ function BackendUIBuilder() {
             const savedState = localStorage.getItem(STORAGE_KEY);
             if (savedState) {
                 const parsedState = JSON.parse(savedState);
-                if (parsedState && parsedState.layout && Array.isArray(parsedState.layout.columns)) {
+                if (parsedState?.layout?.columns && Array.isArray(parsedState.layout.columns)) {
                     const validatedColumns = validateColumns(parsedState.layout.columns);
                     setLayout({
                         columns: validatedColumns,
@@ -68,50 +85,41 @@ function BackendUIBuilder() {
             console.error("Failed to load saved state:", error);
             setLayout(DEFAULT_LAYOUT);
         }
-    }, []);
-
-    // Validate columns recursively
-    const validateColumns = (columns) => {
-        return columns.map((column) => ({
-            id: column.id || `column-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            width: typeof column.width === "number" ? column.width : 12,
-            components: Array.isArray(column.components) ? column.components : [],
-            orientation: column.orientation === "vertical" ? "vertical" : "horizontal",
-            parentId: column.parentId || null,
-            childColumns: Array.isArray(column.childColumns) ? validateColumns(column.childColumns) : [],
-            flexLayout: column.flexLayout || "items-start justify-start",
-            gap: column.gap || "0",
-            backgroundColor: column.backgroundColor || "transparent",
-            borderRadius: column.borderRadius || "0",
-            border: column.border || "none",
-        }));
-    };
+    }, [validateColumns]);
 
     // Save UI state when layout changes
     useEffect(() => {
-        try {
-            const stateToSave = {
-                layout,
-                timestamp: new Date().toISOString(),
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-        } catch (error) {
-            console.error("Failed to save state:", error);
-        }
+        const timer = setTimeout(() => {
+            try {
+                const stateToSave = {
+                    layout,
+                    timestamp: new Date().toISOString(),
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+            } catch (error) {
+                console.error("Failed to save state:", error);
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
     }, [layout]);
 
     // Save backend state when it changes
     useEffect(() => {
-        if (backendState) {
-            try {
-                localStorage.setItem(BACKEND_STORAGE_KEY, JSON.stringify(backendState));
-            } catch (error) {
-                console.error("Failed to save backend state:", error);
+        const timer = setTimeout(() => {
+            if (backendState) {
+                try {
+                    localStorage.setItem(BACKEND_STORAGE_KEY, JSON.stringify(backendState));
+                } catch (error) {
+                    console.error("Failed to save backend state:", error);
+                }
             }
-        }
+        }, 500);
+
+        return () => clearTimeout(timer);
     }, [backendState]);
 
-    const resetState = () => {
+    const resetState = useCallback(() => {
         if (window.confirm("Are you sure you want to reset the configuration? This cannot be undone.")) {
             localStorage.removeItem(BACKEND_STORAGE_KEY);
             localStorage.removeItem(STORAGE_KEY);
@@ -119,9 +127,9 @@ function BackendUIBuilder() {
             setLayout(DEFAULT_LAYOUT);
             alert("Configuration reset to default.");
         }
-    };
+    }, []);
 
-    const saveTemplate = () => {
+    const saveTemplate = useCallback(() => {
         if (!templateName) {
             alert("Template name is required");
             return;
@@ -149,20 +157,20 @@ function BackendUIBuilder() {
             console.error("Failed to save template:", error);
             alert("Failed to save template. Please try again.");
         }
-    };
+    }, [templateName, templateCategory, layout, backendState]);
 
-    const handleLoadTemplate = (template) => {
+    const handleLoadTemplate = useCallback((template) => {
         setLayout(template.layout);
         setBackendState(template.backendState || null);
         setSelectedComponentId(null);
         setSelectedColumnId(null);
         setShowTemplates(false);
         alert("Template loaded successfully.");
-    };
+    }, []);
 
-    const handleBackendStateChange = (newState) => {
+    const handleBackendStateChange = useCallback((newState) => {
         setBackendState(newState);
-    };
+    }, []);
 
     if (showTemplates) {
         return (
@@ -207,7 +215,7 @@ function BackendUIBuilder() {
                         <Layout className="h-4 w-4 mr-1" />
                         Templates
                     </button>
-             
+
                     <button
                         className="px-4 py-2 bg-white hover:bg-gray-100 border border-black rounded-none text-sm font-mono font-medium flex items-center transition-colors"
                         onClick={resetState}
@@ -244,7 +252,7 @@ function BackendUIBuilder() {
                                 Back to Generator
                             </button>
                         </div>
-                        {backendState && backendState.generatedCode ? (
+                        {backendState?.generatedCode ? (
                             <div className="border border-gray-300 rounded-md overflow-hidden">
                                 <pre className="bg-gray-50 p-4 rounded-md overflow-auto h-[calc(100vh-200px)] text-sm">
                                     <code>{backendState.generatedCode}</code>
