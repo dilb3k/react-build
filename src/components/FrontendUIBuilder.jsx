@@ -9,6 +9,8 @@ import generateVueCode from "../utils/VueCodeGenerator";
 
 import { generateReactCode } from "../utils/CodeGenerator"
 import CodePanel from "./CodePanel"
+import { Link, useLocation } from "react-router-dom"
+import { ChevronDown, RotateCcw } from "lucide-react"
 
 const STORAGE_KEY = "react-ui-builder-state"
 
@@ -618,6 +620,9 @@ function UIBuilder() {
             return newLayout
         })
     }, [])
+    const location = useLocation();
+    const isHomePage = location.pathname === '/';
+    const isBackendPage = location.pathname === '/backend';
 
     const handleLoadTemplate = (templateLayout) => {
         setLayout(templateLayout)
@@ -697,27 +702,26 @@ function UIBuilder() {
     return (
         <div className="flex flex-col">
             <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800">React UI Builder</h1>
+                <div className="flex space-x-10 items-center">
+                    <Link to={'/'}>
+                        <h1 className={`text-2xl font-mono font-bold text-black ${isHomePage ? 'underline decoration-2 underline-offset-4' : ''}`}>
+                            Frontend Builder
+                        </h1>
+                    </Link>
+
+                    <Link to={'/backend'}>
+                        <h1 className={`text-2xl font-mono font-bold text-black ${isBackendPage ? 'underline decoration-2 underline-offset-4' : ''}`}>
+                            Backend Builder
+                        </h1>
+                    </Link>
+                </div>
                 <div className="flex space-x-2">
                     <button
-                        className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
+                        className="px-4 py-2 bg-white hover:bg-gray-100 border border-black rounded-none text-sm font-mono font-medium flex items-center transition-colors"
                         onClick={resetState}
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                            />
-                        </svg>
-                        Reset
+                        <RotateCcw className="h-4 w-4 mr-2 text-black" />
+                        <span>Reset</span>
                     </button>
                     <button
                         className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
@@ -946,17 +950,22 @@ function UIBuilder() {
                     </div>
                 </div>
             )}
-            <div className="w-full">
-                <div className="flex items-center space-x-2">
-                    <span className="text-2xl font-medium">Format:</span>
-                    <select
-                        value={codeFormat}
-                        onChange={(e) => setCodeFormat(e.target.value)}
-                        className="border rounded px-2 py-1 text-sm"
-                    >
-                        <option value="react">React</option>
-                        <option value="vue">Vue</option>
-                    </select>
+            <div className="w-full border border-t-black ">
+                <div className="flex items-center space-x-4">
+                    <span className="text-2xl font-mono font-medium">Format:</span>
+                    <div className="relative p-3" >
+                        <select
+                            value={codeFormat}
+                            onChange={(e) => setCodeFormat(e.target.value)}
+                            className="appearance-none bg-white border-2 text-lg font-bold border-black hover:border-gray-400 focus:border-black focus:outline-none px-2 focus:ring-0 rounded-md w-24 py-1 pr-10 text-sm font-mono transition-colors cursor-pointer"
+                        >
+                            <option  value="react">React</option>
+                            <option value="vue">Vue</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 mr-3 pointer-events-none">
+                            <ChevronDown className="h-4 w-4 text-black " />
+                        </div>
+                    </div>
                 </div>
                 <CodePanel
                     code={generatedCode}
