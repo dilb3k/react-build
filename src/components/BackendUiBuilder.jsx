@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { RotateCcw, FileCode, Layout, Code, Settings } from "lucide-react";
+import { RotateCcw, FileCode, Layout } from "lucide-react";
 import BackendCodeGenerator from "./BackendCodeGenerator";
+import DjangoCodeGenerator from "./DjangoCodeGenerator";
 import NodeTemplatesManager from "./NodeTemplatesManager";
 
 // Storage keys
@@ -37,8 +38,21 @@ function BackendUIBuilder() {
     const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
     const [templateName, setTemplateName] = useState("");
     const [templateCategory, setTemplateCategory] = useState("general");
-    const [backendState, setBackendState] = useState(null);
-    const [activeTab, setActiveTab] = useState("generator");
+    const [backendState, setBackendState] = useState({
+        models: [
+            {
+                name: "user",
+                fields: [
+                    { name: "username", type: "String", required: true },
+                    { name: "email", type: "String", required: true },
+                    { name: "age", type: "Number", required: false },
+                ],
+            },
+        ],
+        mongoUrl: "mongodb://localhost:27017/mydb",
+        port: "5070",
+    });
+    const [activeTab, setActiveTab] = useState("node"); // "node" or "django"
 
     // Validate columns recursively
     const validateColumns = useCallback((columns) => {
@@ -60,13 +74,11 @@ function BackendUIBuilder() {
     // Load saved state on initial render
     useEffect(() => {
         try {
-            // Load backend state
             const savedBackendState = localStorage.getItem(BACKEND_STORAGE_KEY);
             if (savedBackendState) {
                 setBackendState(JSON.parse(savedBackendState));
             }
 
-            // Load UI state
             const savedState = localStorage.getItem(STORAGE_KEY);
             if (savedState) {
                 const parsedState = JSON.parse(savedState);
@@ -76,14 +88,10 @@ function BackendUIBuilder() {
                         columns: validatedColumns,
                         containerWidth: parsedState.layout.containerWidth || DEFAULT_LAYOUT.containerWidth,
                     });
-                } else {
-                    console.warn("Invalid saved state format, using default layout");
-                    setLayout(DEFAULT_LAYOUT);
                 }
             }
         } catch (error) {
             console.error("Failed to load saved state:", error);
-            setLayout(DEFAULT_LAYOUT);
         }
     }, [validateColumns]);
 
@@ -91,10 +99,7 @@ function BackendUIBuilder() {
     useEffect(() => {
         const timer = setTimeout(() => {
             try {
-                const stateToSave = {
-                    layout,
-                    timestamp: new Date().toISOString(),
-                };
+                const stateToSave = { layout, timestamp: new Date().toISOString() };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
             } catch (error) {
                 console.error("Failed to save state:", error);
@@ -107,12 +112,10 @@ function BackendUIBuilder() {
     // Save backend state when it changes
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (backendState) {
-                try {
-                    localStorage.setItem(BACKEND_STORAGE_KEY, JSON.stringify(backendState));
-                } catch (error) {
-                    console.error("Failed to save backend state:", error);
-                }
+            try {
+                localStorage.setItem(BACKEND_STORAGE_KEY, JSON.stringify(backendState));
+            } catch (error) {
+                console.error("Failed to save backend state:", error);
             }
         }, 500);
 
@@ -123,9 +126,21 @@ function BackendUIBuilder() {
         if (window.confirm("Are you sure you want to reset the configuration? This cannot be undone.")) {
             localStorage.removeItem(BACKEND_STORAGE_KEY);
             localStorage.removeItem(STORAGE_KEY);
-            setBackendState(null);
+            setBackendState({
+                models: [
+                    {
+                        name: "user",
+                        fields: [
+                            { name: "username", type: "String", required: true },
+                            { name: "email", type: "String", required: true },
+                            { name: "age", type: "Number", required: false },
+                        ],
+                    },
+                ],
+                mongoUrl: "mongodb://localhost:27017/mydb",
+                port: "5070",
+            });
             setLayout(DEFAULT_LAYOUT);
-            alert("Configuration reset to default.");
         }
     }, []);
 
@@ -161,11 +176,23 @@ function BackendUIBuilder() {
 
     const handleLoadTemplate = useCallback((template) => {
         setLayout(template.layout);
-        setBackendState(template.backendState || null);
+        setBackendState(template.backendState || {
+            models: [
+                {
+                    name: "user",
+                    fields: [
+                        { name: "username", type: "String", required: true },
+                        { name: "email", type: "String", required: true },
+                        { name: "age", type: "Number", required: false },
+                    ],
+                },
+            ],
+            mongoUrl: "mongodb://localhost:27017/mydb",
+            port: "5070",
+        });
         setSelectedComponentId(null);
         setSelectedColumnId(null);
         setShowTemplates(false);
-        alert("Template loaded successfully.");
     }, []);
 
     const handleBackendStateChange = useCallback((newState) => {
@@ -179,7 +206,20 @@ function BackendUIBuilder() {
                 onLoadTemplate={handleLoadTemplate}
                 onCreateNew={() => {
                     setLayout(DEFAULT_LAYOUT);
-                    setBackendState(null);
+                    setBackendState({
+                        models: [
+                            {
+                                name: "user",
+                                fields: [
+                                    { name: "username", type: "String", required: true },
+                                    { name: "email", type: "String", required: true },
+                                    { name: "age", type: "Number", required: false },
+                                ],
+                            },
+                        ],
+                        mongoUrl: "mongodb://localhost:27017/mydb",
+                        port: "5070",
+                    });
                     setShowTemplates(false);
                 }}
             />
@@ -192,16 +232,20 @@ function BackendUIBuilder() {
                 <div className="flex space-x-10 items-center">
                     <Link to="/">
                         <h1
-                            className={`text-2xl font-mono font-bold text-black ${isHomePage ? "underline decoration-2 underline-offset-4" : ""
-                                }`}
+                            className={`text-2xl font-mono font-bold text-black ${isHomePage ? "underline decoration-2 underline-offset-4" : ""}`}
                         >
                             Frontend Builder
                         </h1>
                     </Link>
+                    <p
+                        className={`text-2xl font-mono font-bold text-black `}
+                    >
+                        or
+                    </p>
+
                     <Link to="/backend">
                         <h1
-                            className={`text-2xl font-mono font-bold text-black ${isBackendPage ? "underline decoration-2 underline-offset-4" : ""
-                                }`}
+                            className={`text-2xl font-mono font-bold text-black ${isBackendPage ? "underline decoration-2 underline-offset-4" : ""}`}
                         >
                             Backend Builder
                         </h1>
@@ -215,7 +259,6 @@ function BackendUIBuilder() {
                         <Layout className="h-4 w-4 mr-1" />
                         Templates
                     </button>
-
                     <button
                         className="px-4 py-2 bg-white hover:bg-gray-100 border border-black rounded-none text-sm font-mono font-medium flex items-center transition-colors"
                         onClick={resetState}
@@ -233,47 +276,39 @@ function BackendUIBuilder() {
             </header>
 
             <div className="flex-1 overflow-hidden">
-                {activeTab === "generator" ? (
-                    <div className="p-4 h-full overflow-auto">
-                        <BackendCodeGenerator
-                            initialState={backendState}
-                            onStateChange={handleBackendStateChange}
-                        />
+                <div className="p-4">
+                    {/* Tab Navigation */}
+                    <div className="flex space-x-4 border-b border-gray-200 mb-4">
+                        <button
+                            className={`px-4 py-2 text-sm font-medium ${activeTab === "node" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`}
+                            onClick={() => setActiveTab("node")}
+                        >
+                            Node.js Generator
+                        </button>
+                        <button
+                            className={`px-4 py-2 text-sm font-medium ${activeTab === "django" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`}
+                            onClick={() => setActiveTab("django")}
+                        >
+                            Django Generator
+                        </button>
                     </div>
-                ) : (
-                    <div className="p-4 h-full overflow-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold">Generated Backend Code</h2>
-                            <button
-                                className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
-                                onClick={() => setActiveTab("generator")}
-                            >
-                                <Settings className="h-4 w-4 mr-1" />
-                                Back to Generator
-                            </button>
-                        </div>
-                        {backendState?.generatedCode ? (
-                            <div className="border border-gray-300 rounded-md overflow-hidden">
-                                <pre className="bg-gray-50 p-4 rounded-md overflow-auto h-[calc(100vh-200px)] text-sm">
-                                    <code>{backendState.generatedCode}</code>
-                                </pre>
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center h-[calc(100vh-200px)] border border-gray-300 rounded-md">
-                                <div className="text-center">
-                                    <FileCode className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                                    <p className="text-gray-500">Generate code first to see the preview</p>
-                                    <button
-                                        className="mt-4 px-4 py-2 bg-black text-white rounded-md"
-                                        onClick={() => setActiveTab("generator")}
-                                    >
-                                        Go to Generator
-                                    </button>
-                                </div>
-                            </div>
+
+                    {/* Tab Content */}
+                    <div className="h-[calc(100vh-180px)] overflow-auto">
+                        {activeTab === "node" && (
+                            <BackendCodeGenerator
+                                initialState={backendState}
+                                onStateChange={handleBackendStateChange}
+                            />
+                        )}
+                        {activeTab === "django" && (
+                            <DjangoCodeGenerator
+                                initialState={backendState}
+                                onStateChange={handleBackendStateChange}
+                            />
                         )}
                     </div>
-                )}
+                </div>
             </div>
 
             {saveTemplateDialogOpen && (

@@ -709,6 +709,11 @@ function UIBuilder() {
                         </h1>
                     </Link>
 
+                    <p
+                        className={`text-2xl font-mono font-bold text-black `}
+                    >
+                        or
+                    </p>
                     <Link to={'/backend'}>
                         <h1 className={`text-2xl font-mono font-bold text-black ${isBackendPage ? 'underline decoration-2 underline-offset-4' : ''}`}>
                             Backend Builder

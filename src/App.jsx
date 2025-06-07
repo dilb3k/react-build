@@ -13,11 +13,11 @@ function App() {
   return (
     <DndProvider backend={HTML5Backend}>
       <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<UIBuilder />} />
-            <Route path="/backend" element={<BackendUIBuilder />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+        <Routes>
+          <Route path="/" element={<UIBuilder />} />
+          <Route path="/backend" element={<BackendUIBuilder />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
     </DndProvider>
   );
