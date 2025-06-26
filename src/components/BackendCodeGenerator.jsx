@@ -314,7 +314,8 @@ const BackendCodeGenerator = ({ initialState, onStateChange }) => {
                         <Settings className="inline mr-1" size={16} /> Configuration
                     </button>
                     <button
-                        className={`px-4 py-2 text-sm font-medium ${activeTab === "code" ? `${theme === "black" ? "border-b-2 border-white text-white" : "border-b-2 border-black text-black"}` : `${theme === "black" ? "text-white/60" : "text-black/60"} ${!generatedCode ? "opacity-50 cursor-not-allowed" : ""}`} transition-colors hover:${theme === "black" ? "text-white" : "text-black"}`}
+                       
+                       className={`px-4 py-2 text-sm font-medium ${activeTab === "code" ? `${theme === "black" ? "border-b-2 border-white text-white" : "border-b-2 border-black text-black"}` : `${theme === "black" ? "text-white/60" : "text-black/60"} ${!generatedCode ? "opacity-50 cursor-not-allowed" : ""}`} transition-colors hover:${theme === "black" ? "text-white" : "text-black"}`}
                         onClick={() => setActiveTab("code")}
                         disabled={!generatedCode}
                     >
