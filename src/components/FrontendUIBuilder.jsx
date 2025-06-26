@@ -708,16 +708,17 @@ function UIBuilder() {
                 {/* Header */}
                 <header className="shadow-md p-4 flex justify-between items-center">
                     <div className="flex space-x-10 items-center">
-                        <Link to={'/'}>
-                            <h1 className={`text-2xl font-mono font-bold text-black ${isHomePage ? 'underline decoration-2 underline-offset-4' : ''}`}>
-                                Backend Builder
-                            </h1>
+                        <Link to="/"
+                            className={`text-2xl font-mono font-bold text-black ${isHomePage ? "border-b-2 border-black text-black" : ""}`}
+                        >
+                            Backend Builder
                         </Link>
                         <p className="text-2xl font-base text-gray-500">|</p>
-                        <Link to={'/frontend'}>
-                            <h1 className={`text-2xl font-mono font-bold text-black ${isBackendPage ? 'underline decoration-2 underline-offset-4' : ''}`}>
-                                Frontend Builder
-                            </h1>
+                        <Link
+                            to="/frontend"
+                            className={`text-2xl font-mono font-bold text-black ${isBackendPage ? "border-b-2 border-black text-black" : ""}`}
+                        >
+                            Frontend Builder
                         </Link>
                     </div>
                     <div className="flex space-x-2 font-semibold font-mono">

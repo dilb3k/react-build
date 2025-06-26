@@ -306,7 +306,7 @@ const BackendCodeGenerator = ({ initialState, onStateChange }) => {
                  
                 </div>
 
-                <div className={`flex border-b ${theme === "black" ? "border-white" : "border-black"} mb-6`}>
+                <div className={`flex border-b ${theme === "gray-200" ? "border-white" : "border-gray-200"} mb-6`}>
                     <button
                         className={`px-4 py-2 text-sm font-medium ${activeTab === "model" ? `${theme === "black" ? "border-b-2 border-white text-white" : "border-b-2 border-black text-black"}` : `${theme === "black" ? "text-white/60" : "text-black/60"}`} transition-colors hover:${theme === "black" ? "text-white" : "text-black"}`}
                         onClick={() => setActiveTab("model")}
