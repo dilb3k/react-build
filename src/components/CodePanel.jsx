@@ -9,7 +9,7 @@ function CodePanel({
     language: initialLanguage = "javascript",
     onChange,
     showPreview = true,
-    codeFormat = "react", // or "vue", "html", "javascript"
+    activeTab = "react", // or "vue", "html", "javascript"
     theme: initialTheme = "dark" // or "light"
 }) {
     const [code, setCode] = useState(initialCode);
@@ -467,7 +467,7 @@ function CodePanel({
 
     const generatePreview = () => {
         try {
-            if (codeFormat === "vue") {
+            if (activeTab === "vue") {
                 return (
                     <div className="p-4 border rounded-md bg-white h-full overflow-auto">
                         <div className="text-sm text-gray-500 mb-2">Vue Preview</div>
@@ -500,7 +500,7 @@ function CodePanel({
                         />
                     </div>
                 );
-            } else if (codeFormat === "html") {
+            } else if (activeTab === "html") {
                 return (
                     <div className="p-4 border rounded-md bg-white h-full overflow-auto">
                         <div className="text-sm text-gray-500 mb-2">HTML Preview</div>
@@ -804,11 +804,11 @@ function CodePanel({
                         Copy
                     </button>
 
-                 
+
                 </div>
 
                 <div className="flex items-center space-x-2">
-           
+
                 </div>
             </div>
 
@@ -898,7 +898,7 @@ function CodePanel({
                     )}
 
                     {/* Live Preview */}
-                  
+
                 </div>
 
                 {/* Console output */}
@@ -937,7 +937,7 @@ function CodePanel({
                 </div>
                 <div className="flex items-center space-x-4">
                     <span>
-                        {codeFormat === "react" ? "React" : codeFormat === "vue" ? "Vue" : "HTML"} editor
+                        {activeTab === "react" ? "React" : activeTab === "vue" ? "Vue" : "HTML"} editor
                     </span>
                     <span className="hidden sm:inline">Press Tab for indentation</span>
                     <span className="hidden sm:inline">Press Enter after tags for auto-completion</span>
@@ -1032,7 +1032,7 @@ function CodeEditorDemo() {
                     language="jsx"
                     onChange={handleCodeChange}
                     showPreview={true}
-                    codeFormat="react"
+                    activeTab="react"
                     theme="dark"
                 />
             </div>

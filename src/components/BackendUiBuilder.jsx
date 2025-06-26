@@ -228,46 +228,51 @@ function BackendUIBuilder() {
 
     return (
         <div className="flex flex-col h-screen">
-            <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+            <header className=" p-4 flex justify-between items-center shadow-md">
+                
+
                 <div className="flex space-x-10 items-center">
                     <Link to="/">
                         <h1
                             className={`text-2xl font-mono font-bold text-black ${isHomePage ? "underline decoration-2 underline-offset-4" : ""}`}
                         >
-                            Frontend Builder
+                            Backend Builder
+
                         </h1>
                     </Link>
                     <p
-                        className={`text-2xl font-mono font-bold text-black `}
+                        className={`text-2xl font-base text-gray-500 `}
                     >
-                        or
+                        |
                     </p>
 
-                    <Link to="/backend">
+                    <Link to="/frontend">
                         <h1
                             className={`text-2xl font-mono font-bold text-black ${isBackendPage ? "underline decoration-2 underline-offset-4" : ""}`}
                         >
-                            Backend Builder
+                            Frontend Builder
+
                         </h1>
                     </Link>
                 </div>
-                <div className="flex space-x-2">
-                    <button
-                        className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
-                        onClick={() => setShowTemplates(true)}
-                    >
-                        <Layout className="h-4 w-4 mr-1" />
-                        Templates
-                    </button>
-                    <button
-                        className="px-4 py-2 bg-white hover:bg-gray-100 border border-black rounded-none text-sm font-mono font-medium flex items-center transition-colors"
+                <div className="flex space-x-2 font-semibold">
+                   <button
+                        className="px-4 py-2 bg-white hover:bg-black border border-black rounded-md text-sm font-mono flex items-center transition-colors"
                         onClick={resetState}
                     >
                         <RotateCcw className="h-4 w-4 mr-2 text-black" />
                         <span>Reset</span>
                     </button>
+                        <button
+                        className="px-3 py-1 border bg-white border-black rounded-md text-sm flex items-center"
+                        onClick={() => setShowTemplates(true)}
+                    >
+                        <Layout className="h-4 w-4 mr-1" />
+                        Templates
+                    </button>
+                 
                     <button
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm font-mono font-medium flex items-center"
+                        className="px-4 py-2 text-black rounded-md  border border-black text-sm font-mono  flex items-center"
                         onClick={() => setSaveTemplateDialogOpen(true)}
                     >
                         Save Template
@@ -280,13 +285,18 @@ function BackendUIBuilder() {
                     {/* Tab Navigation */}
                     <div className="flex space-x-4 border-b border-gray-200 mb-4">
                         <button
-                            className={`px-4 py-2 text-sm font-medium ${activeTab === "node" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`}
+                            className={`px-4 py-2 text-sm font-medium ${activeTab === "node" ? "border-b-2 border-black text-black" : "text-gray-500"}`}
                             onClick={() => setActiveTab("node")}
                         >
                             Node.js Generator
                         </button>
+                        <p
+                            className={`text-xl font-base text-gray-700 `}
+                        >
+                            |
+                        </p>
                         <button
-                            className={`px-4 py-2 text-sm font-medium ${activeTab === "django" ? "border-b-2 border-blue-500 text-blue-500" : "text-gray-500"}`}
+                            className={`px-4 py-2 text-sm font-medium ${activeTab === "django" ? "border-b-2 border-black text-black" : "text-gray-500"}`}
                             onClick={() => setActiveTab("django")}
                         >
                             Django Generator
@@ -352,7 +362,7 @@ function BackendUIBuilder() {
                                 Cancel
                             </button>
                             <button
-                                className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                                className="px-4 py-2 text-black rounded-md  border border-gray-300"
                                 onClick={saveTemplate}
                             >
                                 Save Template

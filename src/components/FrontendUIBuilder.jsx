@@ -10,7 +10,7 @@ import generateVueCode from "../utils/VueCodeGenerator";
 import { generateReactCode } from "../utils/CodeGenerator"
 import CodePanel from "./CodePanel"
 import { Link, useLocation } from "react-router-dom"
-import { ChevronDown, RotateCcw } from "lucide-react"
+import { ChevronDown, Layout, RotateCcw } from "lucide-react"
 
 const STORAGE_KEY = "react-ui-builder-state"
 
@@ -33,6 +33,8 @@ function UIBuilder() {
     const [selectedColumnId, setSelectedColumnId] = useState(null)
     const [codeFormat, setCodeFormat] = useState("react")
     const [showPropertiesPanel, setShowPropertiesPanel] = useState(true)
+
+    const [activeTab, setActiveTab] = useState("react");
     const [showPreview, setShowPreview] = useState(false)
     const [showTemplates, setShowTemplates] = useState(false)
     const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false)
@@ -622,7 +624,7 @@ function UIBuilder() {
     }, [])
     const location = useLocation();
     const isHomePage = location.pathname === '/';
-    const isBackendPage = location.pathname === '/backend';
+    const isBackendPage = location.pathname === '/frontend';
 
     const handleLoadTemplate = (templateLayout) => {
         setLayout(templateLayout)
@@ -673,7 +675,7 @@ function UIBuilder() {
     if (layout && Array.isArray(layout.rows)) {
         const generatedVueCode = generateVueCode(layout);
     }
-    const generatedCode = codeFormat === "react" ? generatedReactCode : generatedVueCode
+    const generatedCode = activeTab === "react" ? generatedReactCode : generatedVueCode
     if (showTemplates) {
         return (
             <TemplatesManager
@@ -700,192 +702,224 @@ function UIBuilder() {
         setShowCodePanel(!showCodePanel);
     }
     return (
-        <div className="flex flex-col">
-            <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-                <div className="flex space-x-10 items-center">
-                    <Link to={'/'}>
-                        <h1 className={`text-2xl font-mono font-bold text-black ${isHomePage ? 'underline decoration-2 underline-offset-4' : ''}`}>
-                            Frontend Builder
-                        </h1>
-                    </Link>
+        <div className="flex flex-col h-screen">
+            {/* Fixed Header and Tabs */}
+            <div className="fixed top-0 left-0 w-full bg-white z-50">
+                {/* Header */}
+                <header className="shadow-md p-4 flex justify-between items-center">
+                    <div className="flex space-x-10 items-center">
+                        <Link to={'/'}>
+                            <h1 className={`text-2xl font-mono font-bold text-black ${isHomePage ? 'underline decoration-2 underline-offset-4' : ''}`}>
+                                Backend Builder
+                            </h1>
+                        </Link>
+                        <p className="text-2xl font-base text-gray-500">|</p>
+                        <Link to={'/frontend'}>
+                            <h1 className={`text-2xl font-mono font-bold text-black ${isBackendPage ? 'underline decoration-2 underline-offset-4' : ''}`}>
+                                Frontend Builder
+                            </h1>
+                        </Link>
+                    </div>
+                    <div className="flex space-x-2 font-semibold font-mono">
+                        <button
+                            className="px-4 py-2 bg-white hover:bg-gray-100 border border-black rounded-md text-sm font-mono flex items-center transition-colors"
+                            onClick={resetState}
+                        >
+                            <RotateCcw className="h-4 w-4 mr-2 text-black" />
+                            <span>Reset</span>
+                        </button>
+                        <button
+                            className="px-3 py-1 border border-black bg-white rounded-md text-sm flex items-center"
+                            onClick={() => setSaveTemplateDialogOpen(true)}
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                            </svg>
+                            Save Template
+                        </button>
+                        <button
+                            className="px-3 py-1 border bg-white border-black rounded-md text-sm flex items-center"
+                            onClick={() => setShowTemplates(true)}
+                        >
+                            <Layout className="h-4 w-4 mr-1" />
+                            Templates
+                        </button>
+                        <button
+                            className="px-3 py-1 border border-black bg-white rounded-md text-sm flex items-center"
+                            onClick={() => setShowPropertiesPanel(!showPropertiesPanel)}
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                                />
+                            </svg>
+                            {showPropertiesPanel ? "Hide Properties" : "Show Properties"}
+                        </button>
+                    </div>
+                </header>
 
+                {/* Tabs */}
+                <div className="flex space-x-4 border-b border-gray-200 px-4 py-2">
+                    <button
+                        className={`px-4 py-2 text-sm ${activeTab === "react"
+                            ? "border-b-2 border-black text-black font-bold"
+                            : "text-gray-500 font-medium"
+                            }`}
+                        onClick={() => setActiveTab("react")}
+                    >
+                        React
+                    </button>
                     <p
-                        className={`text-2xl font-mono font-bold text-black `}
+                        className={`text-xl font-base text-gray-700 `}
                     >
-                        or
+                        |
                     </p>
-                    <Link to={'/backend'}>
-                        <h1 className={`text-2xl font-mono font-bold text-black ${isBackendPage ? 'underline decoration-2 underline-offset-4' : ''}`}>
-                            Backend Builder
-                        </h1>
-                    </Link>
+                    <button
+                        className={`px-4 py-2 text-sm ${activeTab === "vue"
+                            ? "border-b-2 border-black text-black font-bold"
+                            : "text-gray-500 font-medium"
+                            }`}
+                        onClick={() => setActiveTab("vue")}
+                    >
+                        Vue
+                    </button>
                 </div>
-                <div className="flex space-x-2">
-                    <button
-                        className="px-4 py-2 bg-white hover:bg-gray-100 border border-black rounded-none text-sm font-mono font-medium flex items-center transition-colors"
-                        onClick={resetState}
-                    >
-                        <RotateCcw className="h-4 w-4 mr-2 text-black" />
-                        <span>Reset</span>
-                    </button>
-                    <button
-                        className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
-                        onClick={() => setSaveTemplateDialogOpen(true)}
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                        </svg>
-                        Save as Template
-                    </button>
-                    <button
-                        className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
-                        onClick={() => setShowTemplates(true)}
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                        </svg>
-                        Templates
-                    </button>
-                    <button
-                        className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
-                        onClick={() => setShowPropertiesPanel(!showPropertiesPanel)}
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                            />
-                        </svg>
-                        {showPropertiesPanel ? "Hide Properties" : "Show Properties"}
-                    </button>
-                 
-                </div>
-            </header>
+            </div>
 
-            <div className="flex flex-1 overflow-hidden">
-                {!showPreview && (
-                    <ComponentPaletteAndRenderer
-                        onAddComponent={(type) => {
-                            // Add to selected column if one is selected, otherwise add to first column
-                            const targetColumnId =
-                                selectedColumnId || (layout.columns && layout.columns[0] ? layout.columns[0].id : null)
-                            if (targetColumnId) {
-                                handleAddComponent(type, targetColumnId)
-                            }
-                        }}
-                        selectedColumnId={selectedColumnId}
-                    />
-                )}
+            {/* Spacer to prevent content from being hidden under fixed header */}
+            <div className="h-[120px]"></div> {/* Adjust height based on header and tabs height */}
 
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    {showPreview ? (
-                        <div className="flex-1 p-4 flex flex-col">
-                            <div className="flex items-center justify-between mb-4">
-                                <button
-                                    className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
-                                    onClick={() => setShowPreview(false)}
-                                >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-4 w-4 mr-1"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
+            {/* Rest of the content */}
+            <div className=" flex-1 overflow-auto">
+                <div className="flex p-6 flex-1 overflow-auto">
+                    {!showPreview && (
+                        <ComponentPaletteAndRenderer
+                            onAddComponent={(type) => {
+                                const targetColumnId =
+                                    selectedColumnId || (layout.columns && layout.columns[0] ? layout.columns[0].id : null);
+                                if (targetColumnId) {
+                                    handleAddComponent(type, targetColumnId);
+                                }
+                            }}
+                            selectedColumnId={selectedColumnId}
+                        />
+                    )}
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {showPreview ? (
+                            <div className="flex-1 p-4 flex flex-col">
+                                <div className="flex items-center justify-between mb-4">
+                                    <button
+                                        className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center"
+                                        onClick={() => setShowPreview(false)}
                                     >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                                        />
-                                    </svg>
-                                    Back to Editor
-                                </button>
-                                <div className="flex items-center space-x-2">
-                                    <span className="text-sm font-medium">Code Format:</span>
-                                    <div className="flex border rounded-md overflow-hidden">
-                                        <button
-                                            className={`px-3 py-1 text-sm ${codeFormat === "react" ? "bg-blue-500 text-white" : "bg-white text-gray-700"
-                                                }`}
-                                            onClick={() => setCodeFormat("react")}
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-4 w-4 mr-1"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
                                         >
-                                            React
-                                        </button>
-                                        <button
-                                            className={`px-3 py-1 text-sm ${codeFormat === "vue" ? "bg-blue-500 text-white" : "bg-white text-gray-700"
-                                                }`}
-                                            onClick={() => setCodeFormat("vue")}
-                                        >
-                                            Vue
-                                        </button>
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                                            />
+                                        </svg>
+                                        Back to Editor
+                                    </button>
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-sm font-medium">Code Format:</span>
+                                        <div className="flex border rounded-md overflow-hidden">
+                                            <button
+                                                className={`px-3 py-1 text-sm ${activeTab === "react" ? "bg-blue-500 text-white" : "bg-white text-gray-700"
+                                                    }`}
+                                                onClick={() => setActiveTab("react")}
+                                            >
+                                                React
+                                            </button>
+                                            <button
+                                                className={`px-3 py-1 text-sm ${activeTab === "vue" ? "bg-blue-500 text-white" : "bg-white text-gray-700"
+                                                    }`}
+                                                onClick={() => setActiveTab("vue")}
+                                            >
+                                                Vue
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="flex-1 border border-gray-300 rounded-md overflow-hidden">
+                                    <pre className="bg-gray-50 p-4 rounded-md overflow-auto h-full text-sm">
+                                        <code>{generatedCode}</code>
+                                    </pre>
+                                </div>
                             </div>
-                            <div className="flex-1 border border-gray-300 rounded-md overflow-hidden">
-                                <pre className="bg-gray-50 p-4 rounded-md overflow-auto h-full text-sm">
-                                    <code>{generatedCode}</code>
-                                </pre>
-                            </div>
-                        </div>
-                    ) : (
-                        <LayoutEditor
-                            layout={layout}
-                            selectedComponentId={selectedComponentId}
-                            selectedColumnId={selectedColumnId}
-                            onSelectComponent={setSelectedComponentId}
-                            onSelectColumn={setSelectedColumnId}
-                            onAddComponent={handleAddComponent}
-                            onDeleteComponent={handleDeleteComponent}
-                            onAddColumn={handleAddColumn}
-                            onDeleteColumn={handleDeleteColumn}
-                            onUpdateColumnWidth={handleUpdateColumnWidth}
-                            onUpdateContainerWidth={handleUpdateContainerWidth}
-                            onMoveComponent={handleMoveComponent}
-                            onMoveColumn={handleMoveColumn}
+                        ) : (
+                            <LayoutEditor
+                                layout={layout}
+                                selectedComponentId={selectedComponentId}
+                                selectedColumnId={selectedColumnId}
+                                onSelectComponent={setSelectedComponentId}
+                                onSelectColumn={setSelectedColumnId}
+                                onAddComponent={handleAddComponent}
+                                onDeleteComponent={handleDeleteComponent}
+                                onAddColumn={handleAddColumn}
+                                onDeleteColumn={handleDeleteColumn}
+                                onUpdateColumnWidth={handleUpdateColumnWidth}
+                                onUpdateContainerWidth={handleUpdateContainerWidth}
+                                onMoveComponent={handleMoveComponent}
+                                onMoveColumn={handleMoveColumn}
+                                onUpdateColumn={handleUpdateColumn}
+                            />
+                        )}
+                    </div>
+                    {showPropertiesPanel && !showPreview && (
+                        <PropertiesAndCodePanel
+                            component={component}
+                            columnId={columnId}
+                            column={selectedColumn}
+                            onUpdateComponent={handleUpdateComponent}
                             onUpdateColumn={handleUpdateColumn}
+                            code={generatedCode}
+                            activeTab={activeTab}
+                            onChangeCodeFormat={setActiveTab}
                         />
                     )}
                 </div>
-
-                {showPropertiesPanel && !showPreview && (
-                    <PropertiesAndCodePanel
-                        component={component}
-                        columnId={columnId}
-                        column={selectedColumn}
-                        onUpdateComponent={handleUpdateComponent}
-                        onUpdateColumn={handleUpdateColumn}
+                {/* Code Panel */}
+                <div className="w-full border border-t-black">
+                    <CodePanel
                         code={generatedCode}
-                        codeFormat={codeFormat}
-                        onChangeCodeFormat={setCodeFormat}
+                        language="jsx"
+                        onChange={handleCodeChange}
+                        showPreview={true}
+                        activeTab="react"
+                        theme="dark"
                     />
-                )}
+                </div>
             </div>
 
+            {/* Save Template Dialog */}
             {saveTemplateDialogOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 w-96">
@@ -919,14 +953,14 @@ function UIBuilder() {
                             <button
                                 className="px-4 py-2 bg-blue-500 text-white rounded-md"
                                 onClick={() => {
-                                    const name = document.getElementById("template-name").value
-                                    const category = document.getElementById("template-category").value
+                                    const name = document.getElementById("template-name").value;
+                                    const category = document.getElementById("template-category").value;
                                     if (!name) {
-                                        alert("Template name is required")
-                                        return
+                                        alert("Template name is required");
+                                        return;
                                     }
-                                    saveTemplate(name, category, layout)
-                                    setSaveTemplateDialogOpen(false)
+                                    saveTemplate(name, category, layout);
+                                    setSaveTemplateDialogOpen(false);
                                 }}
                             >
                                 Save Template
@@ -935,32 +969,8 @@ function UIBuilder() {
                     </div>
                 </div>
             )}
-            <div className="w-full border border-t-black ">
-                <div className="flex items-center space-x-4">
-                    <span className="text-2xl font-mono font-medium">Format:</span>
-                    <div className="relative p-3" >
-                        <select
-                            value={codeFormat}
-                            onChange={(e) => setCodeFormat(e.target.value)}
-                            className="appearance-none bg-white border-2 text-lg font-bold border-black hover:border-gray-400 focus:border-black focus:outline-none px-2 focus:ring-0 rounded-md w-24 py-1 pr-10 text-sm font-mono transition-colors cursor-pointer"
-                        >
-                            <option  value="react">React</option>
-                            <option value="vue">Vue</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-2 mr-3 pointer-events-none">
-                            <ChevronDown className="h-4 w-4 text-black " />
-                        </div>
-                    </div>
-                </div>
-                <CodePanel
-                    code={generatedCode}
-                    language="jsx" // or "javascript", "html", "css", etc.
-                    onChange={handleCodeChange}
-                    showPreview={true}
-                    codeFormat="react" // or "vue", "html"
-                    theme="dark" // or "light"
-                />
-            </div>
+
+
         </div>
     )
 }
